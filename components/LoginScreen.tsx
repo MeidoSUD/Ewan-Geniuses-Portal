@@ -1,16 +1,18 @@
+
 import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Logo } from './Logo';
 import { Mail, Lock, Globe } from 'lucide-react';
-import { authService } from '../services/api';
+import { authService, AuthResponse } from '../services/api';
 
 interface LoginScreenProps {
   onSwitch: () => void;
+  onLoginSuccess: (data: AuthResponse) => void;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onSwitch }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onSwitch, onLoginSuccess }) => {
   const { t, language, setLanguage } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   
@@ -25,7 +27,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSwitch }) => {
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.email) newErrors.email = t.required;
-    // Basic email regex or phone regex logic would go here
     if (!formData.password) newErrors.password = t.required;
     
     setErrors(newErrors);
@@ -38,17 +39,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSwitch }) => {
 
     setIsLoading(true);
     try {
-      await authService.login(formData);
-      alert(t.successLogin);
-    } catch (error) {
+      const response = await authService.login(formData);
+      onLoginSuccess(response);
+    } catch (error: any) {
       console.error(error);
+      alert(error.message || "Login failed. Please check your credentials.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="w-full max-w-md space-y-8">
+    <div className="w-full max-w-md space-y-8 bg-surface p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
       <div className="flex justify-end">
         <button 
           onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
@@ -62,20 +64,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSwitch }) => {
       <Logo />
 
       <div className="text-center">
-        <h2 className="mt-6 text-3xl font-bold tracking-tight text-slate-900">
+        <h2 className="mt-6 text-3xl font-bold tracking-tight text-text">
           {t.loginTitle}
         </h2>
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-2 text-sm text-slate-500">
           {t.loginSubtitle}
         </p>
       </div>
 
       <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-        <div className="space-y-4 rounded-md shadow-sm">
+        <div className="space-y-4">
           <Input
             label={t.email}
-            type="text" // allows email or phone
-            placeholder={language === 'en' ? "name@example.com" : "name@example.com"}
+            type="text"
+            placeholder={t.phEmail}
             icon={<Mail size={18} />}
             value={formData.email}
             onChange={(e) => setFormData({...formData, email: e.target.value})}
@@ -84,6 +86,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSwitch }) => {
           <Input
             label={t.password}
             type="password"
+            placeholder={t.phPassword}
             icon={<Lock size={18} />}
             value={formData.password}
             onChange={(e) => setFormData({...formData, password: e.target.value})}
@@ -99,22 +102,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSwitch }) => {
               type="checkbox"
               checked={formData.rememberMe}
               onChange={(e) => setFormData({...formData, rememberMe: e.target.checked})}
-              className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+              className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
             />
-            <label htmlFor="remember-me" className="ms-2 block text-sm text-slate-900">
+            <label htmlFor="remember-me" className="ms-2 block text-sm text-text">
               {t.rememberMe}
             </label>
           </div>
 
           <div className="text-sm">
-            <a href="#" className="font-medium text-primary hover:text-teal-600">
+            <a href="#" className="font-medium text-primary hover:text-blue-600 transition-colors">
               {t.forgotPassword}
             </a>
           </div>
         </div>
 
         <div>
-          <Button type="submit" className="w-full" isLoading={isLoading}>
+          <Button type="submit" className="w-full shadow-lg shadow-primary/20" isLoading={isLoading}>
             {t.loginBtn}
           </Button>
         </div>
@@ -122,7 +125,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSwitch }) => {
 
       <div className="text-center text-sm">
         <span className="text-slate-500">{t.noAccount} </span>
-        <button onClick={onSwitch} className="font-semibold text-primary hover:text-teal-600">
+        <button onClick={onSwitch} className="font-semibold text-primary hover:text-blue-600 transition-colors">
           {t.switchToRegister}
         </button>
       </div>

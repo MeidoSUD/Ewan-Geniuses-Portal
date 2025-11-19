@@ -1,11 +1,13 @@
+
 import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Input } from './ui/Input';
 import { Select } from './ui/Select';
+import { CountrySelect } from './ui/CountrySelect';
+import { PhoneInput } from './ui/PhoneInput';
 import { Button } from './ui/Button';
 import { Logo } from './Logo';
-import { User, Mail, Lock, Phone, Globe, Flag } from 'lucide-react';
-import { COUNTRIES } from '../constants';
+import { User, Mail, Lock, Globe } from 'lucide-react';
 import { authService } from '../services/api';
 
 interface RegisterScreenProps {
@@ -32,16 +34,24 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onSwitch }) => {
   const validate = () => {
     const newErrors: Record<string, string> = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^5[0-9]{8}$/;
 
     if (!formData.firstName) newErrors.firstName = t.required;
     if (!formData.lastName) newErrors.lastName = t.required;
     if (!formData.gender) newErrors.gender = t.required;
+    
     if (!formData.email) {
       newErrors.email = t.required;
     } else if (!emailRegex.test(formData.email)) {
       newErrors.email = t.invalidEmail;
     }
-    if (!formData.phone) newErrors.phone = t.required;
+
+    if (!formData.phone) {
+      newErrors.phone = t.required;
+    } else if (!phoneRegex.test(formData.phone)) {
+      newErrors.phone = "Must start with 5 and be 9 digits";
+    }
+
     if (!formData.nationality) newErrors.nationality = t.required;
     if (!formData.password) newErrors.password = t.required;
     if (formData.password !== formData.confirmPassword) {
@@ -56,9 +66,14 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onSwitch }) => {
     e.preventDefault();
     if (!validate()) return;
 
+    const apiData = {
+        ...formData,
+        phone: `+966${formData.phone}`
+    };
+
     setIsLoading(true);
     try {
-      await authService.register(formData);
+      await authService.register(apiData);
       alert(t.successRegister);
     } catch (error) {
       console.error(error);
@@ -69,7 +84,6 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onSwitch }) => {
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when typing
     if (errors[field]) {
       setErrors(prev => {
         const next = { ...prev };
@@ -80,7 +94,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onSwitch }) => {
   };
 
   return (
-    <div className="w-full max-w-lg space-y-8">
+    <div className="w-full max-w-lg space-y-6 bg-surface p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 my-4">
        <div className="flex justify-end">
         <button 
           onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
@@ -94,18 +108,19 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onSwitch }) => {
       <Logo className="scale-90" />
 
       <div className="text-center">
-        <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-900">
+        <h2 className="mt-2 text-3xl font-bold tracking-tight text-text">
           {t.registerTitle}
         </h2>
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-2 text-sm text-slate-500">
           {t.registerSubtitle}
         </p>
       </div>
 
-      <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
+      <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
             label={t.firstName}
+            placeholder={t.phName}
             icon={<User size={18} />}
             value={formData.firstName}
             onChange={(e) => handleChange('firstName', e.target.value)}
@@ -113,6 +128,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onSwitch }) => {
           />
           <Input
             label={t.lastName}
+            placeholder={t.phName}
             icon={<User size={18} />}
             value={formData.lastName}
             onChange={(e) => handleChange('lastName', e.target.value)}
@@ -124,6 +140,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onSwitch }) => {
            <Select
             label={t.gender}
             options={[
+              { value: '', label: language === 'en' ? 'Select Gender' : 'اختر الجنس' },
               { value: 'male', label: t.genderMale },
               { value: 'female', label: t.genderFemale }
             ]}
@@ -131,28 +148,27 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onSwitch }) => {
             onChange={(e) => handleChange('gender', e.target.value)}
             error={errors.gender}
           />
-           <Select
+           <CountrySelect
             label={t.nationality}
-            options={COUNTRIES.map(c => ({ value: c, label: c }))}
             value={formData.nationality}
-            onChange={(e) => handleChange('nationality', e.target.value)}
+            onChange={(val) => handleChange('nationality', val)}
             error={errors.nationality}
           />
         </div>
 
         <Input
           label={t.email}
+          placeholder={t.phEmail}
           icon={<Mail size={18} />}
           value={formData.email}
           onChange={(e) => handleChange('email', e.target.value)}
           error={errors.email}
         />
 
-        <Input
+        <PhoneInput
           label={t.phone}
-          icon={<Phone size={18} />}
           value={formData.phone}
-          onChange={(e) => handleChange('phone', e.target.value)}
+          onChangeText={(text) => handleChange('phone', text)}
           error={errors.phone}
         />
 
@@ -160,6 +176,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onSwitch }) => {
           <Input
             label={t.password}
             type="password"
+            placeholder={t.phPassword}
             icon={<Lock size={18} />}
             value={formData.password}
             onChange={(e) => handleChange('password', e.target.value)}
@@ -168,6 +185,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onSwitch }) => {
           <Input
             label={t.confirmPassword}
             type="password"
+            placeholder={t.phPassword}
             icon={<Lock size={18} />}
             value={formData.confirmPassword}
             onChange={(e) => handleChange('confirmPassword', e.target.value)}
@@ -175,16 +193,16 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onSwitch }) => {
           />
         </div>
 
-        <div className="pt-2">
-          <Button type="submit" className="w-full" isLoading={isLoading}>
+        <div className="pt-4">
+          <Button type="submit" className="w-full shadow-lg shadow-primary/20" isLoading={isLoading}>
             {t.registerBtn}
           </Button>
         </div>
       </form>
 
-      <div className="text-center text-sm pb-4">
+      <div className="text-center text-sm pb-2">
         <span className="text-slate-500">{t.haveAccount} </span>
-        <button onClick={onSwitch} className="font-semibold text-primary hover:text-teal-600">
+        <button onClick={onSwitch} className="font-semibold text-primary hover:text-blue-600 transition-colors">
           {t.switchToLogin}
         </button>
       </div>
