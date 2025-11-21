@@ -1,11 +1,25 @@
 
-
 // =====================================================
 // API INTEGRATION
 // =====================================================
-// tanel url https://myewanlaravelapp.loca.lt
-// live url https://portal.ewan-geniuses.com/api
-export const API_BASE_URL = "https://myewanlaravelapp.loca.lt/api";
+
+const LOCAL_URL = "https://myewanlaravelapp.loca.lt/api";
+const LIVE_URL = "https://portal.ewan-geniuses.com/api";
+const URL_STORAGE_KEY = 'api_base_url';
+
+export let API_BASE_URL = localStorage.getItem(URL_STORAGE_KEY) || LIVE_URL;
+
+export const setApiUrl = (url: string) => {
+  localStorage.setItem(URL_STORAGE_KEY, url);
+  API_BASE_URL = url;
+  window.location.reload();
+};
+
+export const resetApiUrl = () => {
+  localStorage.removeItem(URL_STORAGE_KEY);
+  API_BASE_URL = LOCAL_URL;
+  window.location.reload();
+};
 
 // --- Token Management ---
 const TOKEN_KEY = 'auth_token';
@@ -129,12 +143,11 @@ const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
   const headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    // 'bypass-tunnel-reminder': 'true', // Removed: Causes CORS errors on some backends. Use browser verification instead.
+    // 'bypass-tunnel-reminder': 'true', // Kept commented: Enable only if backend allows this header
     ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     ...options.headers,
   };
 
-  // Parameter replacement for endpoints like /classes/{id}
   let finalEndpoint = endpoint;
   
   try {
@@ -144,34 +157,35 @@ const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
     });
 
     const contentType = response.headers.get("content-type");
+    const text = await response.text();
 
     // Check for Localtunnel warning page (HTML response)
     if (contentType && contentType.includes("text/html")) {
-       const text = await response.text();
-       // A crude check for the tunnel warning page content
        if (text.includes("tunnel") || text.includes("Localtunnel") || text.includes("loca.lt")) {
            throw new Error("Tunnel verification required. Please open the API URL in your browser to verify the connection.");
        }
-       // Other HTML errors (500, 404 pages served as HTML)
        if (!response.ok) {
-          throw new Error(`Server returned an HTML error (Status: ${response.status}). Check the API URL or Server Logs.`);
+          throw new Error(`Server returned an HTML error (Status: ${response.status}). Check the API URL.`);
        }
        return text; 
     }
 
     let result;
-    if (contentType && contentType.includes("application/json")) {
-      result = await response.json();
-    } else {
-      result = await response.text();
+    try {
+        result = JSON.parse(text);
+    } catch {
+        result = text;
     }
 
     if (!response.ok) {
       if (response.status === 401) {
         tokenService.removeToken();
-        // Optionally redirect to login, but for now just throw
       }
-      const errorMessage = typeof result === 'object' && result.message ? result.message : "API Request failed";
+      // Check for both 'message' and 'error' properties for error text
+      const errorMessage = 
+        (typeof result === 'object' && (result.message || result.error)) 
+        ? (result.message || result.error) 
+        : "API Request failed";
       throw new Error(errorMessage);
     }
 
@@ -181,7 +195,7 @@ const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
     // Handle "Failed to fetch" (Network Error / CORS)
     if (error.message === 'Failed to fetch') {
       console.error("Network Error Details:", error);
-      throw new Error("Network Error: Unable to connect to the server. Please check if the server is running and CORS is configured.");
+      throw new Error(`Network Error: Unable to connect to ${API_BASE_URL}. Check internet or server.`);
     }
     throw error;
   }
@@ -332,5 +346,14 @@ export const studentService = {
   getTeachers: async (): Promise<TeacherProfile[]> => {
     const response = await fetchWithAuth('/student/teachers');
     return response.data || response || [];
+  },
+  
+  // Placeholder for dashboard data until endpoints are fully defined
+  getDashboardData: async () => {
+      return {
+          lastBooking: null,
+          topTeachers: [],
+          recommendedCourses: []
+      };
   }
 };

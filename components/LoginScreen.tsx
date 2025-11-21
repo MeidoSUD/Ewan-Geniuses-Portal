@@ -4,7 +4,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Logo } from './Logo';
-import { Mail, Lock, Globe } from 'lucide-react';
+import { Mail, Lock, Globe, AlertCircle } from 'lucide-react';
 import { authService, AuthResponse } from '../services/api';
 
 interface LoginScreenProps {
@@ -15,6 +15,7 @@ interface LoginScreenProps {
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onSwitch, onLoginSuccess }) => {
   const { t, language, setLanguage } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     email: '',
@@ -35,15 +36,32 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSwitch, onLoginSucce
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setApiError(null);
+    
     if (!validate()) return;
 
     setIsLoading(true);
+    
+    // Smart Phone Formatting
+    let loginIdentifier = formData.email;
+    const cleanInput = loginIdentifier.replace(/\D/g, ''); // Remove non-digits
+    
+    // If it looks like a Saudi number (starts with 5 and is 9 digits), prepend +966
+    if (/^5\d{8}$/.test(cleanInput)) {
+        loginIdentifier = `+966${cleanInput}`;
+    } 
+    // If it starts with 05 and is 10 digits, replace 0 with +966
+    else if (/^05\d{8}$/.test(cleanInput)) {
+        loginIdentifier = `+966${cleanInput.substring(1)}`;
+    }
+
     try {
-      const response = await authService.login(formData);
+      const payload = { ...formData, email: loginIdentifier };
+      const response = await authService.login(payload);
       onLoginSuccess(response);
     } catch (error: any) {
       console.error(error);
-      alert(error.message || "Login failed. Please check your credentials.");
+      setApiError(error.message || "Login failed. Please check your credentials.");
     } finally {
       setIsLoading(false);
     }
@@ -73,6 +91,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSwitch, onLoginSucce
       </div>
 
       <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        {apiError && (
+            <div className="p-4 rounded-lg bg-red-50 border border-red-200 flex items-start gap-3">
+                <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={18} />
+                <p className="text-sm text-red-700">{apiError}</p>
+            </div>
+        )}
+
         <div className="space-y-4">
           <Input
             label={t.email}

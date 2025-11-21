@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Bell, LogOut, Settings, User, Globe, Menu, AlertCircle } from 'lucide-react';
+import { Bell, LogOut, Settings, User, Globe, Menu, AlertCircle, CreditCard, FileText, Award } from 'lucide-react';
 import { AuthResponse } from '../services/api';
 import { Logo } from './Logo';
 
@@ -37,12 +37,22 @@ export const Navbar: React.FC<NavbarProps> = ({ userData, onLogout, activeTab, s
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const navLinks = [
+  const teacherLinks = [
     { id: 'overview', label: t.overview },
     { id: 'schedule', label: t.schedule },
     { id: 'subjects', label: t.subjects },
     { id: 'wallet', label: t.wallet },
   ];
+
+  const studentLinks = [
+    { id: 'overview', label: t.overview },
+    { id: 'private-lessons', label: t.privateLessons },
+    { id: 'courses', label: t.courses },
+    { id: 'language-learning', label: t.languageLearning },
+    { id: 'schedule', label: t.mySchedule },
+  ];
+
+  const navLinks = userRole === 'student' ? studentLinks : teacherLinks;
 
   return (
     <nav className="sticky top-0 z-30 w-full bg-white border-b border-slate-200 shadow-sm">
@@ -122,32 +132,40 @@ export const Navbar: React.FC<NavbarProps> = ({ userData, onLogout, activeTab, s
               </button>
 
               {showProfileMenu && (
-                <div className={`absolute top-12 w-48 bg-white rounded-xl shadow-lg ring-1 ring-black ring-opacity-5 py-1 ${direction === 'rtl' ? 'left-0' : 'right-0'}`}>
+                <div className={`absolute top-12 w-56 bg-white rounded-xl shadow-lg ring-1 ring-black ring-opacity-5 py-1 ${direction === 'rtl' ? 'left-0' : 'right-0'}`}>
                   <div className="px-4 py-2 border-b border-slate-100 lg:hidden">
                     <p className="text-sm font-medium text-slate-900">{user.first_name} {user.last_name}</p>
                     <p className="text-xs text-slate-500 truncate">{user.email}</p>
                   </div>
-                  <button 
-                    onClick={() => { setActiveTab('profile'); setShowProfileMenu(false); }}
-                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                  >
+                  
+                  <button onClick={() => { setActiveTab('profile'); setShowProfileMenu(false); }} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                     <User size={16} /> {t.profile}
                   </button>
-                  <button 
-                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                  >
+                  
+                  {/* Student Specific Menu Items */}
+                  {userRole === 'student' && (
+                    <>
+                      <button onClick={() => { setActiveTab('wallet'); setShowProfileMenu(false); }} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                        <CreditCard size={16} /> {t.paymentMethods}
+                      </button>
+                      <button className="flex w-full items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                        <FileText size={16} /> {t.myTransactions}
+                      </button>
+                      <button className="flex w-full items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                        <Award size={16} /> {t.myCertificates}
+                      </button>
+                    </>
+                  )}
+
+                  <button className="flex w-full items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                     <Settings size={16} /> {t.settings}
                   </button>
-                   <button 
-                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                  >
+                   <button onClick={() => { setActiveTab('disputes'); setShowProfileMenu(false); }} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                     <AlertCircle size={16} /> {t.disputes}
                   </button>
+                  
                   <div className="border-t border-slate-100 my-1"></div>
-                  <button 
-                    onClick={onLogout}
-                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                  >
+                  <button onClick={onLogout} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                     <LogOut size={16} /> {t.logout}
                   </button>
                 </div>

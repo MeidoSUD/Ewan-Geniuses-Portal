@@ -3,7 +3,7 @@ export type Language = 'en' | 'ar';
 export type Direction = 'ltr' | 'rtl';
 
 export interface Translations {
-  [key: string]: string;
+  [key: string]: any;
 }
 
 export interface ThemeColors {
@@ -82,4 +82,45 @@ export interface WalletResponse {
     last_page: number;
     total: number;
   };
+}
+
+// Student Specific Types
+export interface TeacherCard {
+  id: number;
+  first_name: string;
+  last_name: string;
+  profile_photo?: string;
+  rating: number;
+  subject?: string;
+  hourly_rate?: number;
+  nationality?: string;
+  bio?: string;
+}
+
+export interface Booking {
+  id: number;
+  teacher_name: string;
+  subject: string;
+  date: string; // YYYY-MM-DD
+  time: string;
+  status: 'confirmed' | 'pending' | 'completed' | 'cancelled';
+  type: 'online' | 'presence';
+  price?: number;
+}
+
+export interface Dispute {
+  id: string;
+  caseNumber: string;
+  teacherName: string;
+  date: string;
+  status: 'open' | 'resolved' | 'closed';
+  reason: string;
+  description: string;
+}
+
+export interface SubjectCategory {
+  id: string;
+  name_en: string;
+  name_ar: string;
+  icon?: any;
 }
