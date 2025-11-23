@@ -1,0 +1,5 @@
+{
+  "name": "GlobalAuth App",
+  "description": "Bilingual (Arabic/English) Login and Registration screens with RTL support, form validation, and modern UI.",
+  "requestFramePermissions": []
+}
