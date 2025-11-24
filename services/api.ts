@@ -3,7 +3,7 @@
 // API INTEGRATION
 // =====================================================
 
-const TUNNEL_URL = "https://vernice-narial-gustily.ngrok-free.dev/api";
+const TUNNEL_URL = "https://myewanlaravelapp.loca.lt/api";
 const EMULATOR_URL = "http://10.0.2.2:8000/api";
 const URL_STORAGE_KEY = 'api_base_url';
 
