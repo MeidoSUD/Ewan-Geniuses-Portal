@@ -1,9 +1,8 @@
-
 // =====================================================
 // API INTEGRATION
 // =====================================================
 
-const TUNNEL_URL = "https://vernice-narial-gustily.ngrok-free.dev/api";
+const TUNNEL_URL = "https://myewanlaravelapp.loca.lt/api";
 const EMULATOR_URL = "http://10.0.2.2:8000/api";
 const URL_STORAGE_KEY = 'api_base_url';
 
@@ -77,11 +76,11 @@ export const getStorageUrl = (path: string | undefined | null): string | undefin
 // --- Authenticated Fetch Helper ---
 const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
   const token = tokenService.getToken();
-  
+
   const headers: any = {
     'Accept': 'application/json',
     'ngrok-skip-browser-warning': '69420', // Bypass Ngrok warning page
-    'Cache-Control': 'no-cache, no-store, must-revalidate', 
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
     'Pragma': 'no-cache',
     'Expires': '0',
     ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
@@ -100,34 +99,41 @@ const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
     });
 
     const contentType = response.headers.get("content-type");
-    const text = await response.text();
+
+    let result;
+    let text = '';
+
+    try {
+      if (contentType && contentType.includes("application/json")) {
+        result = await response.json();
+      } else {
+        text = await response.text();
+        result = text ? JSON.parse(text) : {};
+      }
+    } catch (parseError) {
+      text = text || await response.text();
+      result = text;
+    }
 
     // Check for HTML responses (Tunnel Warning or 500 Error Pages)
     if (contentType && contentType.includes("text/html")) {
-       if (text.includes("tunnel") || text.includes("Localtunnel") || text.includes("ngrok")) {
+       const htmlText = typeof result === 'string' ? result : text;
+       if (htmlText.includes("tunnel") || htmlText.includes("Localtunnel") || htmlText.includes("ngrok")) {
            throw new Error("Tunnel verification required. Please open the API URL in browser.");
        }
-       // Try to extract error from HTML title if possible, or generic
        throw new Error(`Server returned HTML (Status ${response.status}). Possible PHP Error or 404.`);
-    }
-
-    let result;
-    try {
-        result = text ? JSON.parse(text) : {};
-    } catch {
-        result = text;
     }
 
     if (!response.ok) {
       if (response.status === 401) {
         tokenService.removeToken();
       }
-      
-      const errorMessage = 
-        (typeof result === 'object' && (result.message || result.error)) 
-        ? (result.message || result.error) 
+
+      const errorMessage =
+        (typeof result === 'object' && (result.message || result.error))
+        ? (result.message || result.error)
         : "API Request failed";
-        
+
       const error: any = new Error(errorMessage);
       if (typeof result === 'object' && result.errors) {
           error.errors = result.errors;
