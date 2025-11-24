@@ -99,8 +99,7 @@ const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
     });
 
     const contentType = response.headers.get("content-type");
-    const clonedResponse = response.clone();
-    const text = await clonedResponse.text();
+    const text = await response.text();
 
     // Check for HTML responses (Tunnel Warning or 500 Error Pages)
     if (contentType && contentType.includes("text/html")) {
@@ -122,12 +121,12 @@ const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
       if (response.status === 401) {
         tokenService.removeToken();
       }
-      
-      const errorMessage = 
-        (typeof result === 'object' && (result.message || result.error)) 
-        ? (result.message || result.error) 
+
+      const errorMessage =
+        (typeof result === 'object' && (result.message || result.error))
+        ? (result.message || result.error)
         : "API Request failed";
-        
+
       const error: any = new Error(errorMessage);
       if (typeof result === 'object' && result.errors) {
           error.errors = result.errors;
