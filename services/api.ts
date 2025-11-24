@@ -1,4 +1,3 @@
-
 // =====================================================
 // API INTEGRATION
 // =====================================================
@@ -100,7 +99,8 @@ const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
     });
 
     const contentType = response.headers.get("content-type");
-    const text = await response.text();
+    const clonedResponse = response.clone();
+    const text = await clonedResponse.text();
 
     // Check for HTML responses (Tunnel Warning or 500 Error Pages)
     if (contentType && contentType.includes("text/html")) {
